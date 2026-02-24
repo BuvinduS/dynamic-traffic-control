@@ -18,22 +18,22 @@ def simulate_traffic(lane, severity_in=None, severity_out=None):
         count_out = 0
         match severity_in:
             case "NORMAL":
-                count_in = random.randint(10, 20)
+                count_in = random.randint(10, 15)
                 avg_speed = random.randint(40, 60)
             case "LOW":
-                count_in = random.randint(0, 10)
+                count_in = random.randint(5, 10)
                 avg_speed = random.randint(60, 80)
             case "HIGH":
-                count_in = random.randint(20, 40)
+                count_in = random.randint(35, 40)
                 avg_speed = random.randint(20, 40)
 
         match severity_out:
             case "NORMAL":
-                count_out = random.randint(10, 20)
+                count_out = random.randint(10, 15)
             case "LOW":
-                count_out = random.randint(0, 10)
+                count_out = random.randint(5, 10)
             case "HIGH":
-                count_out = random.randint(20, 40)
+                count_out = random.randint(35, 40)
 
         payload = {
             "lane": lane,
