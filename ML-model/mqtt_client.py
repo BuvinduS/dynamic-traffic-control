@@ -5,6 +5,7 @@ from decision_engine import DecisionEngine
 import threading
 import json
 import time
+import datetime
 
 MQTT_BROKER = "broker.hivemq.com"
 
@@ -29,6 +30,18 @@ class MQTTClient:
 
         self.model = TrafficQLearning()
         self.decision_engine = DecisionEngine(self.model)
+
+        # dicts needed for smoothing plan output
+        self.plan_history = {}
+        self.last_publish_time = {}
+        self.PUBLISHING_INTERVAL_SEC = 10   # demo: 60 sec instead of 5 min
+        self.HISTORY_WINDOW = 12  # if interval=5s → 12 samples = 1 min
+
+    def average_green_times(self, history):
+        return [
+            round(sum(values) / len(values))
+            for values in zip(*history)
+        ]
 
     def start(self):
         self.running = True
@@ -65,19 +78,57 @@ class MQTTClient:
 
                 plan = self.decision_engine.compute_plan(state)
 
-                payload = {
-                    "junction_id": junction_id,
-                    "plan": plan,
-                    "timestamp": time.time()
-                }
+                # Initialize structures if needed
+                if junction_id not in self.plan_history:
+                    self.plan_history[junction_id] = []
+                    self.last_publish_time[junction_id] = 0
 
-                topic = "traffic/junction_1/decision"
-                print("publishing to the topic")
-                self.client.publish(
-                    topic,
-                    json.dumps(payload),
-                    qos=MQTT_QOS
-                )
+                # Store raw plan
+                self.plan_history[junction_id].append(plan["green_times"])
+
+                # Keep only last N samples
+                if len(self.plan_history[junction_id]) > self.HISTORY_WINDOW:
+                    self.plan_history[junction_id].pop(0)
+
+                # Check if it's time to publish
+                current_time = time.time()
+                readable_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                if current_time - self.last_publish_time[junction_id] >= self.PUBLISHING_INTERVAL_SEC:
+                    averaged = self.average_green_times(
+                        self.plan_history[junction_id]
+                    )
+
+                    stable_plan = {
+                        "junction_id": junction_id,
+                        "plan": {
+                            "green_times": averaged,
+                            "road_priority": averaged.index(max(averaged))
+                        },
+                        "timestamp": current_time,
+                        "timestamp_readable": readable_time
+                    }
+
+                    self.client.publish(
+                        "traffic/junction_1/decision",
+                        json.dumps(stable_plan),
+                        qos=MQTT_QOS
+                    )
+
+                    self.last_publish_time[junction_id] = current_time
+
+                # payload = {
+                #     "junction_id": junction_id,
+                #     "plan": plan,
+                #     "timestamp": time.time()
+                # }
+                #
+                # topic = "traffic/junction_1/decision"
+                # print("publishing to the topic")
+                # self.client.publish(
+                #     topic,
+                #     json.dumps(payload),
+                #     qos=MQTT_QOS
+                # )
 
     # MQTT callbacks
     def on_connect(self, client, userdata, flags, reason_code, properties=None):
