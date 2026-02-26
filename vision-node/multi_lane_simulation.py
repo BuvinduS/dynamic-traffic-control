@@ -24,7 +24,7 @@ def simulate_traffic(lane, severity_in=None, severity_out=None):
                 count_in = random.randint(5, 10)
                 avg_speed = random.randint(60, 80)
             case "HIGH":
-                count_in = random.randint(35, 40)
+                count_in = random.randint(35, 100)
                 avg_speed = random.randint(20, 40)
 
         match severity_out:

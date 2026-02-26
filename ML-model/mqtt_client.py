@@ -34,7 +34,7 @@ class MQTTClient:
         # dicts needed for smoothing plan output
         self.plan_history = {}
         self.last_publish_time = {}
-        self.PUBLISHING_INTERVAL_SEC = 10   # demo: 60 sec instead of 5 min
+        self.PUBLISHING_INTERVAL_SEC = 20   # demo: 60 sec instead of 5 min
         self.HISTORY_WINDOW = 12  # if interval=5s → 12 samples = 1 min
 
     def average_green_times(self, history):
