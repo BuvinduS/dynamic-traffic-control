@@ -1,0 +1,31 @@
+import paho.mqtt.client as mqtt
+import time
+import json
+import csv
+import os
+
+def on_message(client, userdata, message):
+    payload = json.loads(message.payload.decode("utf-8"))
+
+    print("Got state")
+
+    print(json.dumps(payload, indent=2))
+
+def on_connect(client, userdata, flags, reason_code, properties=None):
+    print("Connected with reason code:", reason_code)
+    if reason_code == 0:
+        print("Connecting...")
+        client.subscribe("traffic/junction_1/state")
+        print("Connected...")
+
+mqttBroker = "broker.hivemq.com"
+client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, client_id="State_check", protocol=mqtt.MQTTv5)
+
+client.on_message = on_message
+client.on_connect = on_connect
+
+client.connect(mqttBroker, 1883, 60)
+
+print(client.is_connected())
+
+client.loop_forever()
